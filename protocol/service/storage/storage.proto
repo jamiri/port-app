@@ -1,0 +1,11 @@
+syntax = "proto3";
+
+package protocol.service;
+import "protocol/message/store/store.proto";
+option go_package = "github.com/jamiri/port-app/protocol/service";
+
+
+service Storage {
+  rpc Add(protocol.message.store.AddRequest) returns (protocol.message.store.GetPortResponse) {};
+  rpc Get(protocol.message.store.AddRequest) returns (protocol.message.store.GetPortResponse) {};
+}

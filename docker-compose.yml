@@ -1,0 +1,53 @@
+version: "3.3"
+
+services:
+  protobuf:
+    restart: on-failure
+    image: zhouzhuojie/docker-protobuf
+    command: sh -C "scripts/protobuf.sh"
+    volumes:
+      - .:/go/src/github.com/jamiri/port-app
+    working_dir: /go/src/github.com/jamiri/port-app
+
+  redis:
+      image: "redis"
+      hostname: redis
+      ports:
+        - "6379:6379"
+
+
+  portdomain:
+    image: golang:1.14.2
+    volumes:
+      - .:/go/src/github.com/jamiri/port-app
+    ports:
+      - "8080:8080"
+      - "8081:8081"
+    working_dir: /go/src/github.com/jamiri/port-app
+    environment:
+      GO111MODULE: "on"
+      REDIS: redis:6379
+    command: go run cmd/portdomain/main.go
+    depends_on:
+      - protobuf
+    links:
+      - redis
+    restart: always
+
+  parser:
+    image: golang:1.14.2
+    volumes:
+      - .:/go/src/github.com/jamiri/port-app
+    ports:
+      - "8082:8082"
+      - "8083:8083"
+    working_dir: /go/src/github.com/jamiri/port-app
+    environment:
+      GO111MODULE: "on"
+    command: go run cmd/parser/main.go
+    depends_on:
+      - protobuf
+      - portdomain
+    links:
+      - portdomain
+    restart: always

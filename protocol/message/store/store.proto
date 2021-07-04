@@ -1,0 +1,27 @@
+syntax = "proto3";
+
+package protocol.message.store;
+
+option go_package = "github.com/jamiri/port-app/protocol/message/store";
+
+message Port {
+  string name = 1;
+  string city = 2;
+  string country = 3;
+  repeated string alias = 4;
+  repeated string regions = 5;
+  repeated float coordinates = 6;
+  string province = 7;
+  string timezone = 8;
+  repeated string unlocs = 9;
+}
+
+message AddRequest {
+  string key = 1;
+  Port data = 2;
+}
+
+message GetPortResponse {
+  string key = 1;
+  Port data = 2;
+}
