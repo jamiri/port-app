@@ -1,7 +1,15 @@
 package main
 
-import "github.com/jamiri/port-app/pkg/parser"
+import (
+	"fmt"
+	"github.com/jamiri/port-app/pkg/parser"
+)
 
 func main() {
-	parser.ReadFile("./pkg/parser/ports.json")
+
+	c := parser.ReadPorts("./pkg/parser/ports.json")
+
+	for p := range c {
+		fmt.Println(p)
+	}
 }

@@ -4,62 +4,61 @@ import (
 	"bufio"
 	"bytes"
 	"encoding/json"
-	"fmt"
-	"io"
 	"log"
 	"os"
 )
 
+var (
+	jsonBeginMarker = []byte("{")
+	jsonEndMarker   = []byte("}")
+	jsonEndLine     = []byte("  },")
+	lastJsonEndLine = []byte("  }")
+)
 
-func ReadFile(path string) (io.Reader, error) {
+func ReadPorts(path string) <-chan Port {
 	f, _ := os.Open(path)
-	defer func() {
+	portsChan := make(chan Port)
+
+	go func() {
+		scanner := bufio.NewScanner(f)
+		firstLine := true
+		var buffer bytes.Buffer
+		data := Port{}
+
+		// Skip first line as it is { and continue
+		for scanner.Scan(); scanner.Scan(); {
+			line := scanner.Bytes()
+
+			if firstLine {
+				line = jsonBeginMarker
+				firstLine = false
+			}
+
+			if bytes.Equal(line, jsonEndLine) || bytes.Equal(line, lastJsonEndLine) {
+				line = jsonEndMarker
+				buffer.Write(line)
+				err := json.Unmarshal(buffer.Bytes(), &data)
+				portsChan <- data
+				if err != nil {
+					log.Fatal(err)
+				}
+				buffer.Reset()
+				firstLine = true
+				continue
+			}
+			buffer.Write(line)
+		}
+
+		if err := scanner.Err(); err != nil {
+			log.Fatal(err)
+		}
+
 		err := f.Close()
 		if err != nil {
 			log.Fatal(err)
 		}
+		close(portsChan)
 	}()
 
-	jsonBeginMarker := []byte("{")
-	jsonEndMarker := []byte("}")
-
-	scanner := bufio.NewScanner(f)
-	firstLine := true
-	var buffer bytes.Buffer
-	data := make(map[string]interface{})
-	// Skip first line as it is { and continue
-	for scanner.Scan(); scanner.Scan(); {
-		line := scanner.Bytes()
-		var portCode []byte
-
-		if firstLine {
-			portCode = line[3:8]
-			line = jsonBeginMarker
-			firstLine = false
-		}
-
-		if string(line) == "  }," {
-			line = jsonEndMarker
-			buffer.Write(line)
-			err := json.Unmarshal(buffer.Bytes(), &data)
-			if err != nil {
-				log.Fatal(err)
-			}
-			fmt.Println(string(portCode))
-			fmt.Println(data)
-
-			fmt.Println("\n\n")
-
-			buffer.Reset()
-			firstLine = true
-			continue
-		}
-		buffer.Write(line)
-	}
-
-	if err := scanner.Err(); err != nil {
-		log.Fatal(err)
-	}
-
-	return nil, nil
+	return portsChan
 }
